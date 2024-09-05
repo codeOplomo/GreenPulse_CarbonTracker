@@ -4,11 +4,11 @@ import com.carbontracker.models.Consumption;
 import com.carbontracker.models.User;
 import com.carbontracker.utils.UserInputHandler;
 
-import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ReportGenerator {
@@ -44,6 +44,76 @@ public class ReportGenerator {
                 System.out.println("Invalid choice. Please try again.");
         }
     }
+
+    public static void generateAllUsersReport() {
+        LocalDate startDate = UserInputHandler.getValidDate("Enter start date (YYYY-MM-DD): ");
+        LocalDate endDate = UserInputHandler.getValidDate("Enter end date (YYYY-MM-DD): ");
+        int reportType = getReportType();
+
+        // Collect all users who have consumption data in the date range
+        Set<User> activeUsers = userManager.getAllUsers().stream()
+                .filter(user -> hasConsumptionInDateRange(user, startDate, endDate))
+                .collect(Collectors.toSet());
+
+        if (activeUsers.isEmpty()) {
+            System.out.println("No users with consumption data in the specified date range.");
+            return;
+        }
+
+        System.out.println("Total users with consumption data between " + startDate + " and " + endDate + ": " + activeUsers.size());
+
+        // Aggregate consumption data for all active users
+        Map<LocalDate, Double> aggregatedMonthlyConsumption = new HashMap<>();
+
+        for (User user : activeUsers) {
+            Consumption consumption = user.getConsumption();
+            LocalDate currentStart = startDate.with(TemporalAdjusters.firstDayOfMonth());
+            LocalDate currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
+
+            while (!currentStart.isAfter(endDate)) {
+                double monthlyConsumption = consumption.getTotalCarbonForMonth(currentStart);
+                aggregatedMonthlyConsumption.merge(currentStart, monthlyConsumption, Double::sum);
+
+                // Move to the next month
+                currentStart = currentStart.plusMonths(1);
+                currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
+            }
+        }
+
+        // Print aggregated monthly consumption
+        System.out.println("Aggregated Monthly Consumption Report:");
+        LocalDate currentStart = startDate.with(TemporalAdjusters.firstDayOfMonth());
+        LocalDate currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
+
+        while (!currentStart.isAfter(endDate)) {
+            double totalConsumption = aggregatedMonthlyConsumption.getOrDefault(currentStart, 0.0);
+            System.out.println("Month from " + currentStart + " to " + currentEnd + ": " + totalConsumption);
+
+            // Move to the next month
+            currentStart = currentStart.plusMonths(1);
+            currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
+        }
+    }
+
+    private static boolean hasConsumptionInDateRange(User user, LocalDate startDate, LocalDate endDate) {
+        Consumption consumption = user.getConsumption();
+        LocalDate currentStart = startDate.with(TemporalAdjusters.firstDayOfMonth());
+        LocalDate currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
+
+        while (!currentStart.isAfter(endDate)) {
+            double monthlyConsumption = consumption.getTotalCarbonForMonth(currentStart);
+            if (monthlyConsumption > 0) {
+                return true; // User has consumption data in the range
+            }
+
+            // Move to the next month
+            currentStart = currentStart.plusMonths(1);
+            currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
+        }
+
+        return false; // No consumption data in the range
+    }
+
 
     private static int getReportType() {
         System.out.println("\nReport Type Menu:");
@@ -123,14 +193,5 @@ public class ReportGenerator {
             currentStart = currentStart.plusMonths(1);
             currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
         }
-    }
-
-
-    public static void generateAllUsersReport() {
-        // Placeholder for all users report
-    }
-
-    public static void generateDateRangeReport() {
-        // Placeholder for date range report
     }
 }

@@ -26,8 +26,7 @@ public class Menu {
         System.out.println("5. Add Consumption");
         System.out.println("6. Generate User Report");
         System.out.println("7. Generate All Users Report");
-        System.out.println("8. Generate Date Range Report");
-        System.out.println("9. Exit");
+        System.out.println("8. Exit");
         System.out.print("Enter your choice: ");
     }
 
@@ -55,9 +54,6 @@ public class Menu {
                 ReportGenerator.generateAllUsersReport();
                 break;
             case 8:
-                ReportGenerator.generateDateRangeReport();
-                break;
-            case 9:
                 System.out.println("Exiting...");
                 return false;
             default:
