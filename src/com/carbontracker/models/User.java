@@ -1,16 +1,16 @@
-package com.carbontracker;
+package com.carbontracker.models;
 
 public class User {
-    private final String id; // Made final to ensure immutability
+    private final String id;
     private String name;
     private int age;
-    private final Consumption consumption; // Add Consumption to User
+    private final Consumption consumption;
 
     public User(String id, String name, int age) {
         this.id = id;
         this.name = name;
         this.age = age;
-        this.consumption = new Consumption(); // Initialize Consumption
+        this.consumption = new Consumption();
     }
 
     // Getters and Setters
