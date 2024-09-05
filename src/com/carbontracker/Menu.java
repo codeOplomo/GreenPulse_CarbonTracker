@@ -4,7 +4,7 @@ import com.carbontracker.services.ReportGenerator;
 import com.carbontracker.services.UserAccountManager;
 import com.carbontracker.utils.UserInputHandler;
 
-public class UserMenu {
+public class Menu {
     public static void main(String[] args) {
         boolean running = true;
 
