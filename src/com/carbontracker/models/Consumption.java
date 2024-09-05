@@ -1,6 +1,7 @@
 package com.carbontracker.models;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.HashMap;
 import java.util.Map;
@@ -12,15 +13,20 @@ public class Consumption {
         this.dailyConsumptions = new HashMap<>();
     }
 
-    public void addEntry(double carbonAmount, LocalDate startDate, LocalDate endDate) {
+    public void addEntry(double totalCarbonAmount, LocalDate startDate, LocalDate endDate) {
         LocalDate start = startDate;
         LocalDate end = endDate;
+        long daysCount = ChronoUnit.DAYS.between(start, end) + 1; // Number of days inclusive
 
-        // Add the carbonAmount to each date in the range
+        // Calculate the daily amount
+        double dailyAmount = totalCarbonAmount / daysCount;
+
+        // Add the daily amount to each date in the range
         for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
-            dailyConsumptions.merge(date, carbonAmount, Double::sum);
+            dailyConsumptions.merge(date, dailyAmount, Double::sum);
         }
     }
+
 
     public double getTotalCarbon() {
         return dailyConsumptions.values().stream().mapToDouble(Double::doubleValue).sum();

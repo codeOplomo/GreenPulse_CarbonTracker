@@ -50,7 +50,6 @@ public class ReportGenerator {
 
 
     private static void displayDailyConsumption(Consumption consumption, LocalDate startDate, LocalDate endDate) {
-        // Get the daily consumption totals
         Map<LocalDate, Double> dailyConsumptions = consumption.calculateDailyConsumptionAverages();
 
         if (dailyConsumptions.isEmpty()) {
@@ -58,7 +57,7 @@ public class ReportGenerator {
             return;
         }
 
-        // Filter the daily consumption data within the date range
+        // Filter and display consumption for the specified date range
         Map<LocalDate, Double> filteredConsumption = dailyConsumptions.entrySet()
                 .stream()
                 .filter(entry -> !entry.getKey().isBefore(startDate) && !entry.getKey().isAfter(endDate))
@@ -69,31 +68,11 @@ public class ReportGenerator {
             return;
         }
 
-        // Calculate the total consumption and the number of days in the date range
-        double totalConsumption = filteredConsumption.values().stream()
-                .mapToDouble(Double::doubleValue)
-                .sum();
-
-        long daysInRange = ChronoUnit.DAYS.between(startDate, endDate) + 1; // +1 to include both start and end dates
-
-        // Ensure there's no division by zero
-        if (daysInRange <= 0) {
-            System.out.println("Invalid date range.");
-            return;
-        }
-
-        // Calculate the average daily consumption
-        double averageDailyConsumption = totalConsumption / daysInRange;
-
-        // Display the daily consumption for each date
         System.out.println("Daily Consumption Report:");
         filteredConsumption.entrySet()
                 .stream()
                 .sorted(Map.Entry.comparingByKey())
                 .forEach(entry -> System.out.println(entry.getKey() + ": " + entry.getValue()));
-
-        // Display the average daily consumption
-        //System.out.println("Average Daily Consumption over the period: " + averageDailyConsumption);
     }
 
 
