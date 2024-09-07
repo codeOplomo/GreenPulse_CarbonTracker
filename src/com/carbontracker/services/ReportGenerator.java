@@ -62,32 +62,87 @@ public class ReportGenerator {
 
         System.out.println("Total users with consumption data between " + startDate + " and " + endDate + ": " + activeUsers.size());
 
-        // Aggregate consumption data for all active users
-        Map<LocalDate, Double> aggregatedMonthlyConsumption = new HashMap<>();
+        // Choose the report generation logic based on the selected report type
+        switch (reportType) {
+            case 1:
+                generateDailyReport(activeUsers, startDate, endDate);
+                break;
+            case 2:
+                generateWeeklyReport(activeUsers, startDate, endDate);
+                break;
+            case 3:
+                generateMonthlyReport(activeUsers, startDate, endDate);
+                break;
+            default:
+                System.out.println("Invalid report type.");
+        }
+    }
+
+    private static void generateDailyReport(Set<User> activeUsers, LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, Double> aggregatedDailyConsumption = new HashMap<>();
 
         for (User user : activeUsers) {
             Consumption consumption = user.getConsumption();
-            LocalDate currentStart = startDate.with(TemporalAdjusters.firstDayOfMonth());
-            LocalDate currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
+            Map<LocalDate, Double> dailyConsumptions = consumption.calculateDailyConsumptionAverages();
 
-            while (!currentStart.isAfter(endDate)) {
-                double monthlyConsumption = consumption.getTotalCarbonForMonth(currentStart);
-                aggregatedMonthlyConsumption.merge(currentStart, monthlyConsumption, Double::sum);
-
-                // Move to the next month
-                currentStart = currentStart.plusMonths(1);
-                currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
-            }
+            // Filter daily consumptions within the specified range and aggregate
+            dailyConsumptions.forEach((date, amount) -> {
+                if (!date.isBefore(startDate) && !date.isAfter(endDate)) {
+                    aggregatedDailyConsumption.merge(date, amount, Double::sum);
+                }
+            });
         }
 
-        // Print aggregated monthly consumption
-        System.out.println("Aggregated Monthly Consumption Report:");
+        // Print aggregated daily consumption
+        System.out.println("Aggregated Daily Consumption Report:");
+        aggregatedDailyConsumption.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> System.out.println(entry.getKey() + ": " + entry.getValue()));
+    }
+
+    private static void generateWeeklyReport(Set<User> activeUsers, LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, Double> aggregatedWeeklyConsumption = new HashMap<>();
+        LocalDate currentStart = startDate.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        LocalDate currentEnd = currentStart.plusWeeks(1).minusDays(1);
+
+        // Adjust the endDate to be inclusive of the week ending on the next Sunday
+        endDate = endDate.with(TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY));
+
+        while (!currentStart.isAfter(endDate)) {
+            final LocalDate weekStart = currentStart;
+            final LocalDate weekEnd = currentEnd;
+
+            double weeklyConsumption = activeUsers.stream()
+                    .mapToDouble(user -> user.getConsumption().getTotalCarbonForWeek(weekStart))
+                    .sum();
+
+            // Print start and end of the week
+            System.out.println("Week from " + weekStart + " to " + weekEnd + ": " + weeklyConsumption);
+
+            // Move to the next week
+            currentStart = currentStart.plusWeeks(1);
+            currentEnd = currentEnd.plusWeeks(1);
+        }
+    }
+
+    private static void generateMonthlyReport(Set<User> activeUsers, LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, Double> aggregatedMonthlyConsumption = new HashMap<>();
         LocalDate currentStart = startDate.with(TemporalAdjusters.firstDayOfMonth());
         LocalDate currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
 
+        // Adjust endDate to the last day of the month if it's not already
+        endDate = endDate.with(TemporalAdjusters.lastDayOfMonth());
+
         while (!currentStart.isAfter(endDate)) {
-            double totalConsumption = aggregatedMonthlyConsumption.getOrDefault(currentStart, 0.0);
-            System.out.println("Month from " + currentStart + " to " + currentEnd + ": " + totalConsumption);
+            final LocalDate monthStart = currentStart;
+            final LocalDate monthEnd = currentEnd;
+
+            double monthlyConsumption = activeUsers.stream()
+                    .mapToDouble(user -> user.getConsumption().getTotalCarbonForMonth(monthStart))
+                    .sum();
+
+            // Print start and end of the month
+            System.out.println("Month from " + monthStart + " to " + monthEnd + ": " + monthlyConsumption);
 
             // Move to the next month
             currentStart = currentStart.plusMonths(1);

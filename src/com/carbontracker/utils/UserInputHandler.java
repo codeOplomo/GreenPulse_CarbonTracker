@@ -40,11 +40,11 @@ public class UserInputHandler {
             try {
                 System.out.print(prompt);
                 double value = scanner.nextDouble();
-                scanner.nextLine(); // consume the newline character
+                scanner.nextLine();
                 return value;
             } catch (Exception e) {
                 System.out.println("Invalid input. Please enter a valid number.");
-                scanner.next(); // clear the invalid input
+                scanner.next();
             }
         }
     }
@@ -54,12 +54,12 @@ public class UserInputHandler {
             try {
                 System.out.print("Enter Age: ");
                 int age = scanner.nextInt();
-                scanner.nextLine(); // consume the newline character
+                scanner.nextLine();
                 if (age > 0) return age;
                 else System.out.println("Age must be positive.");
             } catch (Exception e) {
                 System.out.println("Invalid input. Please enter a valid number.");
-                scanner.next(); // clear the invalid input
+                scanner.next();
             }
         }
     }

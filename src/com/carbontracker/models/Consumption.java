@@ -13,6 +13,11 @@ public class Consumption {
         this.dailyConsumptions = new HashMap<>();
     }
 
+    public Map<LocalDate, Double> calculateDailyConsumptionAverages() {
+        // Return the daily consumptions as is
+        return new HashMap<>(dailyConsumptions);
+    }
+
     public void addEntry(double totalCarbonAmount, LocalDate startDate, LocalDate endDate) {
         LocalDate start = startDate;
         LocalDate end = endDate;
@@ -27,13 +32,8 @@ public class Consumption {
         }
     }
 
-
     public double getTotalCarbon() {
         return dailyConsumptions.values().stream().mapToDouble(Double::doubleValue).sum();
-    }
-
-    public double getTotalCarbonForDay(LocalDate date) {
-        return dailyConsumptions.getOrDefault(date, 0.0);
     }
 
     public double getTotalCarbonForWeek(LocalDate date) {
@@ -52,10 +52,5 @@ public class Consumption {
                 .filter(entry -> !entry.getKey().isBefore(startOfMonth) && !entry.getKey().isAfter(endOfMonth))
                 .mapToDouble(Map.Entry::getValue)
                 .sum();
-    }
-
-    public Map<LocalDate, Double> calculateDailyConsumptionAverages() {
-        // Return the daily consumptions as is
-        return new HashMap<>(dailyConsumptions);
     }
 }
