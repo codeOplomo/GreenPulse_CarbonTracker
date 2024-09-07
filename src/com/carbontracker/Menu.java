@@ -48,10 +48,10 @@ public class Menu {
                 UserAccountManager.addConsumption();
                 break;
             case 6:
-                ReportGenerator.generateUserReport();
+                ReportGenerator.userReport();
                 break;
             case 7:
-                ReportGenerator.generateAllUsersReport();
+                ReportGenerator.allUsersReport();
                 break;
             case 8:
                 System.out.println("Exiting...");
