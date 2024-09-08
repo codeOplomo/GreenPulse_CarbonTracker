@@ -5,27 +5,28 @@ import com.carbontracker.utils.UserInputHandler;
 
 import java.time.LocalDate;
 
-public class UserAccountManager {
-    private static final UserManager userManager = UserManager.getInstance();
+public class AccountManager {
+    private static final UserService userService = UserService.getInstance();
+    private static final ConsumptionService consumptionService = ConsumptionService.getInstance(); // Use singleton instance
 
     public static void createAccount() {
         String id = UserInputHandler.getValidString("Enter ID: ");
         String name = UserInputHandler.getValidString("Enter Name: ");
         int age = UserInputHandler.getValidAge();
 
-        if (userManager.getUser(id) != null) {
+        if (userService.getUser(id) != null) {
             System.out.println("User with this ID already exists.");
             return;
         }
 
         User newUser = new User(id, name, age);
-        userManager.addUser(newUser);
+        userService.addUser(newUser);
         System.out.println("Account created successfully.");
     }
 
     public static void viewAccount() {
         String id = UserInputHandler.getValidString("Enter User ID: ");
-        User user = userManager.getUser(id);
+        User user = userService.getUser(id);
         if (user != null) {
             user.displayDetails();
         } else {
@@ -35,7 +36,7 @@ public class UserAccountManager {
 
     public static void updateAccount() {
         String id = UserInputHandler.getValidString("Enter User ID: ");
-        User user = userManager.getUser(id);
+        User user = userService.getUser(id);
         if (user == null) {
             System.out.println("User not found.");
             return;
@@ -56,8 +57,8 @@ public class UserAccountManager {
 
     public static void deleteAccount() {
         String id = UserInputHandler.getValidString("Enter User ID: ");
-        if (userManager.getUser(id) != null) {
-            userManager.removeUser(id);
+        if (userService.getUser(id) != null) {
+            userService.removeUser(id);
             System.out.println("Account deleted successfully.");
         } else {
             System.out.println("User not found.");
@@ -65,19 +66,19 @@ public class UserAccountManager {
     }
 
     public static void addConsumption() {
-        String id = UserInputHandler.getValidString("Enter User ID: ");
-        User user = userManager.getUser(id);
+        String userId = UserInputHandler.getValidString("Enter User ID: ");
+        User user = userService.getUser(userId);
+
         if (user == null) {
             System.out.println("User not found.");
             return;
         }
 
-        double carbonAmount = UserInputHandler.getValidDouble("Enter carbon amount: ");
+        double totalCarbonAmount = UserInputHandler.getValidDouble("Enter total carbon amount: ");
         LocalDate startDate = UserInputHandler.getValidDate("Enter start date (YYYY-MM-DD): ");
         LocalDate endDate = UserInputHandler.getValidDate("Enter end date (YYYY-MM-DD): ");
 
-        user.getConsumption().addEntry(carbonAmount, startDate, endDate);
+        consumptionService.addEntry(user.getConsumption(), totalCarbonAmount, startDate, endDate);
         System.out.println("Consumption added successfully.");
     }
-
 }

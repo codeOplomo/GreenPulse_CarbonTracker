@@ -42,6 +42,11 @@ public class User {
         System.out.println("ID: " + id);
         System.out.println("Name: " + name);
         System.out.println("Age: " + age);
-        System.out.println("Total Carbon Consumption: " + consumption.getTotalCarbon());
+        System.out.println("Total Carbon Consumption: " + getTotalCarbonConsumption());
+    }
+
+    private double getTotalCarbonConsumption() {
+        // Assuming that you have a method to calculate total carbon consumption
+        return consumption.getDailyConsumptions().values().stream().mapToDouble(Double::doubleValue).sum();
     }
 }

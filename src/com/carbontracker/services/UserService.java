@@ -6,13 +6,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class UserManager {
-    private static final UserManager INSTANCE = new UserManager();
+public class UserService {
+    private static final UserService INSTANCE = new UserService();
     private final Map<String, User> users = new HashMap<>();
 
-    private UserManager() { }
+    private UserService() { }
 
-    public static UserManager getInstance() {
+    public static UserService getInstance() {
         return INSTANCE;
     }
 

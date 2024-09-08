@@ -1,7 +1,7 @@
 package com.carbontracker;
 
+import com.carbontracker.services.AccountManager;
 import com.carbontracker.services.ReportGenerator;
-import com.carbontracker.services.UserAccountManager;
 import com.carbontracker.utils.UserInputHandler;
 
 public class Menu {
@@ -33,25 +33,25 @@ public class Menu {
     private static boolean handleUserChoice(int choice) {
         switch (choice) {
             case 1:
-                UserAccountManager.createAccount();
+                AccountManager.createAccount();
                 break;
             case 2:
-                UserAccountManager.viewAccount();
+                AccountManager.viewAccount();
                 break;
             case 3:
-                UserAccountManager.updateAccount();
+                AccountManager.updateAccount();
                 break;
             case 4:
-                UserAccountManager.deleteAccount();
+                AccountManager.deleteAccount();
                 break;
             case 5:
-                UserAccountManager.addConsumption();
+                AccountManager.addConsumption();
                 break;
             case 6:
-                ReportGenerator.userReport();
+                ReportGenerator.userReport(); // ReportGenerator will use singleton instances internally
                 break;
             case 7:
-                ReportGenerator.allUsersReport();
+                ReportGenerator.allUsersReport(); // ReportGenerator will use singleton instances internally
                 break;
             case 8:
                 System.out.println("Exiting...");
@@ -61,5 +61,4 @@ public class Menu {
         }
         return true;
     }
-
 }

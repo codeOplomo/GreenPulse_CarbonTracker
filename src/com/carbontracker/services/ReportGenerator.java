@@ -12,7 +12,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ReportGenerator {
-    private static final UserManager userManager = UserManager.getInstance();
+    private static final UserService userManager = UserService.getInstance();
+    private static final ConsumptionService consumptionService = ConsumptionService.getInstance(); // Use singleton instance
 
     public static void userReport() {
         String id = UserInputHandler.getValidString("Enter User ID: ");
@@ -83,7 +84,7 @@ public class ReportGenerator {
     private static void generateDailyReport(Object data, LocalDate startDate, LocalDate endDate) {
         if (data instanceof Consumption) {
             Consumption consumption = (Consumption) data;
-            Map<LocalDate, Double> dailyConsumptions = consumption.calculateDailyConsumptionAverages();
+            Map<LocalDate, Double> dailyConsumptions = consumption.getDailyConsumptions();
 
             if (dailyConsumptions.isEmpty()) {
                 System.out.println("No consumption data available.");
@@ -112,7 +113,7 @@ public class ReportGenerator {
 
             for (User user : activeUsers) {
                 Consumption consumption = user.getConsumption();
-                Map<LocalDate, Double> dailyConsumptions = consumption.calculateDailyConsumptionAverages();
+                Map<LocalDate, Double> dailyConsumptions = consumption.getDailyConsumptions();
 
                 dailyConsumptions.forEach((date, amount) -> {
                     if (!date.isBefore(startDate) && !date.isAfter(endDate)) {
@@ -139,7 +140,7 @@ public class ReportGenerator {
             endDate = endDate.with(TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY));
 
             while (!currentStart.isAfter(endDate)) {
-                double weeklyConsumption = consumption.getTotalCarbonForWeek(currentStart);
+                double weeklyConsumption = consumptionService.getTotalCarbonForWeek(consumption, currentStart);
 
                 System.out.println("Week from " + currentStart + " to " + currentEnd + ": " + weeklyConsumption);
 
@@ -158,7 +159,7 @@ public class ReportGenerator {
                 final LocalDate weekEnd = currentEnd;
 
                 double weeklyConsumption = activeUsers.stream()
-                        .mapToDouble(user -> user.getConsumption().getTotalCarbonForWeek(weekStart))
+                        .mapToDouble(user -> consumptionService.getTotalCarbonForWeek(user.getConsumption(), weekStart))
                         .sum();
 
                 aggregatedWeeklyConsumption.put(weekStart, weeklyConsumption);
@@ -186,7 +187,7 @@ public class ReportGenerator {
             }
 
             while (!currentStart.isAfter(endDate)) {
-                double monthlyConsumption = consumption.getTotalCarbonForMonth(currentStart);
+                double monthlyConsumption = consumptionService.getTotalCarbonForMonth(consumption, currentStart);
 
                 System.out.println("Month from " + currentStart + " to " + currentEnd + ": " + monthlyConsumption);
 
@@ -205,7 +206,7 @@ public class ReportGenerator {
                 final LocalDate monthEnd = currentEnd;
 
                 double monthlyConsumption = activeUsers.stream()
-                        .mapToDouble(user -> user.getConsumption().getTotalCarbonForMonth(monthStart))
+                        .mapToDouble(user -> consumptionService.getTotalCarbonForMonth(user.getConsumption(), monthStart))
                         .sum();
 
                 aggregatedMonthlyConsumption.put(monthStart, monthlyConsumption);
@@ -226,7 +227,7 @@ public class ReportGenerator {
         LocalDate currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
 
         while (!currentStart.isAfter(endDate)) {
-            double monthlyConsumption = consumption.getTotalCarbonForMonth(currentStart);
+            double monthlyConsumption = consumptionService.getTotalCarbonForMonth(consumption, currentStart);
             if (monthlyConsumption > 0) {
                 return true; // User has consumption data in the range
             }
