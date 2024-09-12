@@ -1,33 +1,58 @@
-package com.carbontracker.services;
+/*package com.carbontracker.services;
 
 import com.carbontracker.models.Consumption;
 import com.carbontracker.models.User;
+import com.carbontracker.models.enumeration.ConsumptionType;
 import com.carbontracker.utils.UserInputHandler;
 
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ReportGenerator {
     private static final UserService userManager = UserService.getInstance();
-    private static final ConsumptionService consumptionService = ConsumptionService.getInstance(); // Use singleton instance
 
     public static void userReport() {
-        String id = UserInputHandler.getValidString("Enter User ID: ");
-        User user = userManager.getUser(id);
-        if (user == null) {
+        // Get the user ID as a UUID
+        String idString = UserInputHandler.getValidString("Enter User ID: ");
+        UUID userId;
+        try {
+            userId = UUID.fromString(idString);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Invalid User ID format.");
+            return;
+        }
+
+        // Fetch the user using the UUID
+        Optional<User> optionalUser = userManager.findById(userId);
+        if (optionalUser.isEmpty()) {
             System.out.println("User not found.");
             return;
         }
+        User user = optionalUser.get();
 
         int reportType = getReportType();
         LocalDate startDate = UserInputHandler.getValidDate("Enter start date (YYYY-MM-DD): ");
         LocalDate endDate = UserInputHandler.getValidDate("Enter end date (YYYY-MM-DD): ");
 
-        generateReportForUser(user.getConsumption(), reportType, startDate, endDate);
+        generateReportForUser(user, reportType, startDate, endDate);
+    }
+
+    private static void generateReportForUser(User user, int reportType, LocalDate startDate, LocalDate endDate) {
+        switch (reportType) {
+            case 1:
+                generateDailyReport(user, startDate, endDate);
+                break;
+            case 2:
+                generateWeeklyReport(user, startDate, endDate);
+                break;
+            case 3:
+                generateMonthlyReport(user, startDate, endDate);
+                break;
+            default:
+                System.out.println("Invalid choice. Please try again.");
+        }
     }
 
     public static void allUsersReport() {
@@ -38,24 +63,8 @@ public class ReportGenerator {
         generateReportForAllUsers(reportType, startDate, endDate);
     }
 
-    private static void generateReportForUser(Consumption consumption, int reportType, LocalDate startDate, LocalDate endDate) {
-        switch (reportType) {
-            case 1:
-                generateDailyReport(consumption, startDate, endDate);
-                break;
-            case 2:
-                generateWeeklyReport(consumption, startDate, endDate);
-                break;
-            case 3:
-                generateMonthlyReport(consumption, startDate, endDate);
-                break;
-            default:
-                System.out.println("Invalid choice. Please try again.");
-        }
-    }
-
     private static void generateReportForAllUsers(int reportType, LocalDate startDate, LocalDate endDate) {
-        Set<User> activeUsers = userManager.getAllUsers().stream()
+        Set<User> activeUsers = userManager.findAll().stream()
                 .filter(user -> hasConsumptionInDateRange(user, startDate, endDate))
                 .collect(Collectors.toSet());
 
@@ -81,162 +90,154 @@ public class ReportGenerator {
         }
     }
 
-    private static void generateDailyReport(Object data, LocalDate startDate, LocalDate endDate) {
-        if (data instanceof Consumption) {
-            Consumption consumption = (Consumption) data;
+    private static void generateDailyReport(Set<User> users, LocalDate startDate, LocalDate endDate) {
+        List<Consumption> consumptions = users.stream()
+                .flatMap(user -> user.getConsumptions().stream())
+                .collect(Collectors.toList());
+
+        generateDailyReportForConsumptions(consumptions, startDate, endDate);
+    }
+
+    private static void generateDailyReport(User user, LocalDate startDate, LocalDate endDate) {
+        List<Consumption> consumptions = user.getConsumptions();
+        generateDailyReportForConsumptions(consumptions, startDate, endDate);
+    }
+
+    private static void generateDailyReportForConsumptions(List<Consumption> consumptions, LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, Double> aggregatedDailyConsumption = new HashMap<>();
+
+        for (Consumption consumption : consumptions) {
             Map<LocalDate, Double> dailyConsumptions = consumption.getDailyConsumptions();
+            dailyConsumptions.forEach((date, amount) -> {
+                if (!date.isBefore(startDate) && !date.isAfter(endDate)) {
+                    aggregatedDailyConsumption.merge(date, amount * consumption.calculerImpact(), Double::sum);
+                }
+            });
+        }
 
-            if (dailyConsumptions.isEmpty()) {
-                System.out.println("No consumption data available.");
-                return;
-            }
+        if (aggregatedDailyConsumption.isEmpty()) {
+            System.out.println("No consumption data available for the specified date range.");
+            return;
+        }
 
-            Map<LocalDate, Double> filteredConsumption = dailyConsumptions.entrySet()
-                    .stream()
-                    .filter(entry -> !entry.getKey().isBefore(startDate) && !entry.getKey().isAfter(endDate))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        System.out.println("Daily Consumption Report:");
+        aggregatedDailyConsumption.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .forEach(entry -> System.out.println(entry.getKey() + ": " + entry.getValue()));
+    }
 
-            if (filteredConsumption.isEmpty()) {
-                System.out.println("No consumption data available for the specified date range.");
-                return;
-            }
+    private static void generateWeeklyReport(Set<User> users, LocalDate startDate, LocalDate endDate) {
+        List<Consumption> consumptions = users.stream()
+                .flatMap(user -> user.getConsumptions().stream())
+                .collect(Collectors.toList());
 
-            System.out.println("Daily Consumption Report:");
-            filteredConsumption.entrySet()
-                    .stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .forEach(entry -> System.out.println(entry.getKey() + ": " + entry.getValue()));
+        generateWeeklyReportForConsumptions(consumptions, startDate, endDate);
+    }
 
-        } else if (data instanceof Set) {
-            Set<User> activeUsers = (Set<User>) data;
-            Map<LocalDate, Double> aggregatedDailyConsumption = new HashMap<>();
+    private static void generateWeeklyReport(User user, LocalDate startDate, LocalDate endDate) {
+        List<Consumption> consumptions = user.getConsumptions();
+        generateWeeklyReportForConsumptions(consumptions, startDate, endDate);
+    }
 
-            for (User user : activeUsers) {
-                Consumption consumption = user.getConsumption();
-                Map<LocalDate, Double> dailyConsumptions = consumption.getDailyConsumptions();
+    private static void generateWeeklyReportForConsumptions(List<Consumption> consumptions, LocalDate startDate, LocalDate endDate) {
+        LocalDate currentStart = startDate.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+        LocalDate currentEnd = currentStart.plusWeeks(1).minusDays(1);
+        endDate = endDate.with(TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY));
 
-                dailyConsumptions.forEach((date, amount) -> {
-                    if (!date.isBefore(startDate) && !date.isAfter(endDate)) {
-                        aggregatedDailyConsumption.merge(date, amount, Double::sum);
-                    }
-                });
-            }
+        while (!currentStart.isAfter(endDate)) {
+            final LocalDate weekStart = currentStart;
+            final LocalDate weekEnd = currentEnd;
 
-            System.out.println("Aggregated Daily Consumption Report:");
-            aggregatedDailyConsumption.entrySet().stream()
-                    .sorted(Map.Entry.comparingByKey())
-                    .forEach(entry -> System.out.println(entry.getKey() + ": " + entry.getValue()));
+            double weeklyConsumption = consumptions.stream()
+                    .mapToDouble(consumption ->
+                            consumption.getDailyConsumptions().entrySet().stream()
+                                    .filter(entry -> !entry.getKey().isBefore(weekStart) && !entry.getKey().isAfter(weekEnd))
+                                    .mapToDouble(entry -> entry.getValue() * consumption.calculerImpact())
+                                    .sum()
+                    )
+                    .sum();
 
-        } else {
-            System.out.println("Invalid data type.");
+            System.out.println("Week from " + weekStart + " to " + weekEnd + ": " + weeklyConsumption);
+
+            // Move to the next week
+            currentStart = currentStart.plusWeeks(1);
+            currentEnd = currentEnd.plusWeeks(1);
         }
     }
 
-    private static void generateWeeklyReport(Object data, LocalDate startDate, LocalDate endDate) {
-        if (data instanceof Consumption) {
-            Consumption consumption = (Consumption) data;
-            LocalDate currentStart = startDate.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-            LocalDate currentEnd = currentStart.plusWeeks(1).minusDays(1);
-            endDate = endDate.with(TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY));
+    public static void generateMonthlyReport(Set<User> users, LocalDate startDate, LocalDate endDate) {
+        List<Consumption> consumptions = users.stream()
+                .flatMap(user -> user.getConsumptions().stream())
+                .collect(Collectors.toList());
 
-            while (!currentStart.isAfter(endDate)) {
-                double weeklyConsumption = consumptionService.getTotalCarbonForWeek(consumption, currentStart);
-
-                System.out.println("Week from " + currentStart + " to " + currentEnd + ": " + weeklyConsumption);
-
-                currentStart = currentStart.plusWeeks(1);
-                currentEnd = currentEnd.plusWeeks(1);
-            }
-        } else if (data instanceof Set) {
-            Set<User> activeUsers = (Set<User>) data;
-            LocalDate currentStart = startDate.with(TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
-            LocalDate currentEnd = currentStart.plusWeeks(1).minusDays(1);
-            endDate = endDate.with(TemporalAdjusters.nextOrSame(java.time.DayOfWeek.SUNDAY));
-            Map<LocalDate, Double> aggregatedWeeklyConsumption = new HashMap<>();
-
-            while (!currentStart.isAfter(endDate)) {
-                final LocalDate weekStart = currentStart;
-                final LocalDate weekEnd = currentEnd;
-
-                double weeklyConsumption = activeUsers.stream()
-                        .mapToDouble(user -> consumptionService.getTotalCarbonForWeek(user.getConsumption(), weekStart))
-                        .sum();
-
-                aggregatedWeeklyConsumption.put(weekStart, weeklyConsumption);
-
-                System.out.println("Week from " + weekStart + " to " + weekEnd + ": " + weeklyConsumption);
-
-                currentStart = currentStart.plusWeeks(1);
-                currentEnd = currentEnd.plusWeeks(1);
-            }
-        } else {
-            System.out.println("Invalid data type.");
-        }
+        generateMonthlyReportForConsumptions(consumptions, startDate, endDate);
     }
 
-    private static void generateMonthlyReport(Object data, LocalDate startDate, LocalDate endDate) {
-        if (data instanceof Consumption) {
-            Consumption consumption = (Consumption) data;
-            LocalDate currentStart = startDate.with(TemporalAdjusters.firstDayOfMonth());
-            LocalDate currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
-            endDate = endDate.with(TemporalAdjusters.lastDayOfMonth());
+    public static void generateMonthlyReport(User user, LocalDate startDate, LocalDate endDate) {
+        List<Consumption> consumptions = user.getConsumptions();
+        generateMonthlyReportForConsumptions(consumptions, startDate, endDate);
+    }
 
-            if (currentEnd.isBefore(startDate)) {
-                currentStart = startDate.with(TemporalAdjusters.firstDayOfMonth());
-                currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
-            }
+    private static void generateMonthlyReportForConsumptions(List<Consumption> consumptions, LocalDate startDate, LocalDate endDate) {
+        LocalDate currentStart = startDate.with(TemporalAdjusters.firstDayOfMonth());
+        LocalDate currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
+        endDate = endDate.with(TemporalAdjusters.lastDayOfMonth());
 
-            while (!currentStart.isAfter(endDate)) {
-                double monthlyConsumption = consumptionService.getTotalCarbonForMonth(consumption, currentStart);
+        if (currentEnd.isBefore(startDate)) {
+            currentStart = startDate.with(TemporalAdjusters.firstDayOfMonth());
+            currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
+        }
 
-                System.out.println("Month from " + currentStart + " to " + currentEnd + ": " + monthlyConsumption);
+        while (!currentStart.isAfter(endDate)) {
+            final LocalDate startOfMonth = currentStart;
+            final LocalDate endOfMonth = currentEnd;
 
-                currentStart = currentStart.plusMonths(1);
-                currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
-            }
-        } else if (data instanceof Set) {
-            Set<User> activeUsers = (Set<User>) data;
-            LocalDate currentStart = startDate.with(TemporalAdjusters.firstDayOfMonth());
-            LocalDate currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
-            endDate = endDate.with(TemporalAdjusters.lastDayOfMonth());
-            Map<LocalDate, Double> aggregatedMonthlyConsumption = new HashMap<>();
+            double monthlyConsumption = consumptions.stream()
+                    .mapToDouble(consumption ->
+                            consumption.getDailyConsumptions().entrySet().stream()
+                                    .filter(entry -> !entry.getKey().isBefore(startOfMonth) && !entry.getKey().isAfter(endOfMonth))
+                                    .mapToDouble(entry -> entry.getValue() * consumption.calculerImpact())
+                                    .sum()
+                    )
+                    .sum();
 
-            while (!currentStart.isAfter(endDate)) {
-                final LocalDate monthStart = currentStart;
-                final LocalDate monthEnd = currentEnd;
+            System.out.println("Month from " + startOfMonth + " to " + endOfMonth + ": " + monthlyConsumption);
 
-                double monthlyConsumption = activeUsers.stream()
-                        .mapToDouble(user -> consumptionService.getTotalCarbonForMonth(user.getConsumption(), monthStart))
-                        .sum();
-
-                aggregatedMonthlyConsumption.put(monthStart, monthlyConsumption);
-
-                System.out.println("Month from " + monthStart + " to " + monthEnd + ": " + monthlyConsumption);
-
-                currentStart = currentStart.plusMonths(1);
-                currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
-            }
-        } else {
-            System.out.println("Invalid data type.");
+            // Move to the next month
+            currentStart = currentStart.plusMonths(1);
+            currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
         }
     }
 
     private static boolean hasConsumptionInDateRange(User user, LocalDate startDate, LocalDate endDate) {
-        Consumption consumption = user.getConsumption();
+        List<Consumption> consumptions = user.getConsumptions();
         LocalDate currentStart = startDate.with(TemporalAdjusters.firstDayOfMonth());
         LocalDate currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
 
+        endDate = endDate.with(TemporalAdjusters.lastDayOfMonth());
+
         while (!currentStart.isAfter(endDate)) {
-            double monthlyConsumption = consumptionService.getTotalCarbonForMonth(consumption, currentStart);
+            final LocalDate startOfMonth = currentStart;
+            final LocalDate endOfMonth = currentEnd;
+
+            double monthlyConsumption = consumptions.stream()
+                    .mapToDouble(consumption -> {
+                        return consumption.getDailyConsumptions().entrySet().stream()
+                                .filter(entry -> !entry.getKey().isBefore(startOfMonth) && !entry.getKey().isAfter(endOfMonth))
+                                .mapToDouble(entry -> entry.getValue() * consumption.calculerImpact())
+                                .sum();
+                    })
+                    .sum();
+
             if (monthlyConsumption > 0) {
-                return true; // User has consumption data in the range
+                return true;
             }
 
             currentStart = currentStart.plusMonths(1);
             currentEnd = currentStart.with(TemporalAdjusters.lastDayOfMonth());
         }
 
-        return false; // No consumption data in the range
+        return false;
     }
 
     private static int getReportType() {
@@ -248,3 +249,4 @@ public class ReportGenerator {
         return UserInputHandler.getUserChoice();
     }
 }
+*/

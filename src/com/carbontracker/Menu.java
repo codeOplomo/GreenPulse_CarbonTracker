@@ -1,11 +1,16 @@
 package com.carbontracker;
 
+import com.carbontracker.config.DbConnection;
 import com.carbontracker.services.AccountManager;
-import com.carbontracker.services.ReportGenerator;
+//import com.carbontracker.services.ReportGenerator;
 import com.carbontracker.utils.UserInputHandler;
+
+import java.sql.Connection;
 
 public class Menu {
     public static void main(String[] args) {
+        Connection connection = DbConnection.getInstance().getConnection();
+
         boolean running = true;
 
         while (running) {
@@ -48,10 +53,10 @@ public class Menu {
                 AccountManager.addConsumption();
                 break;
             case 6:
-                ReportGenerator.userReport(); // ReportGenerator will use singleton instances internally
+                //ReportGenerator.userReport(); // ReportGenerator will use singleton instances internally
                 break;
             case 7:
-                ReportGenerator.allUsersReport(); // ReportGenerator will use singleton instances internally
+                //ReportGenerator.allUsersReport(); // ReportGenerator will use singleton instances internally
                 break;
             case 8:
                 System.out.println("Exiting...");

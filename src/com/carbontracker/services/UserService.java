@@ -1,14 +1,16 @@
 package com.carbontracker.services;
 
 import com.carbontracker.models.User;
+import com.carbontracker.repository.UserRepository;
+import com.carbontracker.impl.UserRepositoryImpl;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 public class UserService {
     private static final UserService INSTANCE = new UserService();
-    private final Map<String, User> users = new HashMap<>();
+    private final UserRepository userRepository = new UserRepositoryImpl(); // Use repository
 
     private UserService() { }
 
@@ -16,27 +18,23 @@ public class UserService {
         return INSTANCE;
     }
 
-    public void addUser(User user) {
-        users.put(user.getId(), user);
+    public Optional<User> findById(UUID userId) {
+        return userRepository.findById(userId);
     }
 
-    public void removeUser(String userId) {
-        users.remove(userId);
+    public Collection<User> findAll() {
+        return userRepository.findAll();
     }
 
-    public User getUser(String userId) {
-        return users.get(userId);
+    public Optional<User> add(User user) {
+        return userRepository.add(user);
     }
 
-    public void updateUser(String userId, String name, int age) {
-        User user = users.get(userId);
-        if (user != null) {
-            user.setName(name);
-            user.setAge(age);
-        }
+    public boolean delete(UUID userId) {
+        return userRepository.delete(userId);
     }
 
-    public Collection<User> getAllUsers() {
-        return users.values();
+    public Optional<User> update(UUID userId, String name, int age) {
+        return userRepository.update(userId, name, age);
     }
 }

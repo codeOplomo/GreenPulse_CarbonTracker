@@ -63,4 +63,25 @@ public class UserInputHandler {
             }
         }
     }
+
+    public static <T extends Enum<T>> T getValidEnum(String prompt, Class<T> enumClass) {
+        while (true) {
+            System.out.print(prompt);
+            String input = scanner.nextLine().toUpperCase(); // Convert to upper case to match enum constants
+            try {
+                return Enum.valueOf(enumClass, input);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Invalid input. Please enter one of the following values: " + String.join(", ", getEnumValues(enumClass)));
+            }
+        }
+    }
+
+    private static <T extends Enum<T>> String[] getEnumValues(Class<T> enumClass) {
+        T[] enumValues = enumClass.getEnumConstants();
+        String[] values = new String[enumValues.length];
+        for (int i = 0; i < enumValues.length; i++) {
+            values[i] = enumValues[i].name();
+        }
+        return values;
+    }
 }

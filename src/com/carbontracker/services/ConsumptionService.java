@@ -1,20 +1,21 @@
 package com.carbontracker.services;
 
-import com.carbontracker.models.Consumption;
+import com.carbontracker.impl.ConsumptionRepositoryImpl;
+import com.carbontracker.models.*;
+import com.carbontracker.models.enumeration.ConsumptionType;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAdjusters;
-import java.util.Map;
+import java.util.Optional;
 
 public class ConsumptionService {
-    // Step 1: Create a private static instance of the class
     private static ConsumptionService instance;
+    private final ConsumptionRepositoryImpl consumptionRepository;
 
-    // Step 2: Make the constructor private so that this class cannot be instantiated from outside
-    private ConsumptionService() {}
+    private ConsumptionService() {
+        this.consumptionRepository = new ConsumptionRepositoryImpl(); // Initialize repository
+    }
 
-    // Step 3: Provide a public static method to get the instance of the class
     public static synchronized ConsumptionService getInstance() {
         if (instance == null) {
             instance = new ConsumptionService();
@@ -22,21 +23,32 @@ public class ConsumptionService {
         return instance;
     }
 
-    public void addEntry(Consumption consumption, double totalCarbonAmount, LocalDate startDate, LocalDate endDate) {
-        LocalDate start = startDate;
-        LocalDate end = endDate;
-        long daysCount = ChronoUnit.DAYS.between(start, end) + 1; // Number of days inclusive
+    public boolean addEntry(User user, Consumption consumption, LocalDate startDate, LocalDate endDate) {
+        try {
+            // Calculate daily amount if needed
+            LocalDate start = startDate;
+            LocalDate end = endDate;
+            long daysCount = ChronoUnit.DAYS.between(start, end) + 1; // Number of days inclusive
+            double dailyAmount = consumption.getAmount() / daysCount;
 
-        // Calculate the daily amount
-        double dailyAmount = totalCarbonAmount / daysCount;
+            // Update consumption with calculated daily amount if needed
+            consumption.setAmount(dailyAmount);
 
-        // Add the daily amount to each date in the range
-        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
-            consumption.getDailyConsumptions().merge(date, dailyAmount, Double::sum);
+            // Set start and end dates for the consumption
+            consumption.setStartDate(start);
+            consumption.setEndDate(end);
+
+            // Add the new consumption to the repository
+            Optional<Consumption> addedConsumption = consumptionRepository.add(consumption);
+            return addedConsumption.isPresent(); // Return true if successful
+
+        } catch (Exception e) {
+            // Handle the exception (e.g., log it)
+            e.printStackTrace(); // Consider logging instead of printing stack trace
+            return false; // Return false if an exception occurs
         }
     }
-
-
+/*
     public double getTotalCarbon(Consumption consumption) {
         return consumption.getDailyConsumptions().values().stream().mapToDouble(Double::doubleValue).sum();
     }
@@ -57,5 +69,5 @@ public class ConsumptionService {
                 .filter(entry -> !entry.getKey().isBefore(startOfMonth) && !entry.getKey().isAfter(endOfMonth))
                 .mapToDouble(Map.Entry::getValue)
                 .sum();
-    }
+    }*/
 }
