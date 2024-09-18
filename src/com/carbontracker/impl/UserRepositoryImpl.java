@@ -16,7 +16,11 @@ public class UserRepositoryImpl implements UserRepository {
 
     public UserRepositoryImpl() {
         this.connection = DbConnection.getConnection();
+        if (this.connection == null) {
+            System.err.println("Connection is null in UserRepositoryImpl");
+        }
     }
+
 
     @Override
     public Optional<User> findById(UUID userId) {

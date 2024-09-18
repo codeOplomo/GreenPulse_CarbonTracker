@@ -14,7 +14,15 @@ public class Food extends Consumption {
         if (weight <= 0) throw new IllegalArgumentException("Weight must be positive.");
         this.typeFood = typeFood;
         this.weight = weight;
-        // Impact is set in the parent class constructor via calculateImpact method
+        this.setImpact(calculateImpact());
+    }
+
+    public String getTypeFood() {
+        return typeFood;
+    }
+
+    public double getWeight() {
+        return weight;
     }
 
     @Override

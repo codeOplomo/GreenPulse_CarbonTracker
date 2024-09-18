@@ -14,7 +14,15 @@ public class Transport extends Consumption {
         if (distanceTravelled <= 0) throw new IllegalArgumentException("Distance travelled must be positive.");
         this.distanceTravelled = distanceTravelled;
         this.vehicleType = vehicleType;
-        // Impact is set in the parent class constructor via calculateImpact method
+        this.setImpact(calculateImpact());
+    }
+
+    public double getDistanceTravelled() {
+        return distanceTravelled;
+    }
+
+    public String getVehicleType() {
+        return vehicleType;
     }
 
     @Override

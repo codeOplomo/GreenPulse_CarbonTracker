@@ -6,15 +6,23 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 public class Housing extends Consumption {
-    private final double consommationEnergy;
+    private final double energyConsumption;
     private final String typeEnergy;
 
-    public Housing(UUID id, String typeEnergy, double consommationEnergy, double amount, LocalDate startDate, LocalDate endDate, UUID userId) {
+    public Housing(UUID id, String typeEnergy, double energyConsumption, double amount, LocalDate startDate, LocalDate endDate, UUID userId) {
         super(id, amount, ConsumptionType.HOUSING, startDate, endDate, userId);
-        if (consommationEnergy <= 0) throw new IllegalArgumentException("Consommation d'énergie must be positive.");
-        this.consommationEnergy = consommationEnergy;
+        if (energyConsumption <= 0) throw new IllegalArgumentException("Consommation d'énergie must be positive.");
+        this.energyConsumption = energyConsumption;
         this.typeEnergy = typeEnergy;
-        // Impact is set in the parent class constructor via calculateImpact method
+        this.setImpact(calculateImpact());
+    }
+
+    public double getConsumptionEnergy() {
+        return energyConsumption;
+    }
+
+    public String getTypeEnergy() {
+        return typeEnergy;
     }
 
     @Override
@@ -30,6 +38,6 @@ public class Housing extends Consumption {
             default:
                 throw new IllegalArgumentException("Unsupported energy type.");
         }
-        return getAmount() * consommationEnergy * impactScale;
+        return getAmount() * energyConsumption * impactScale;
     }
 }

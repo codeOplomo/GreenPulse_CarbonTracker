@@ -21,7 +21,6 @@ public abstract class Consumption {
         this.startDate = startDate != null ? startDate : LocalDate.now();
         this.endDate = endDate != null ? endDate : LocalDate.now();
         this.userId = userId;
-        this.impact = calculateImpact(); // Set impact value during construction
     }
 
     // Getter and Setter for id
