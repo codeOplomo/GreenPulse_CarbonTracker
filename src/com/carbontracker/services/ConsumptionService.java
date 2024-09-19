@@ -31,8 +31,6 @@ public class ConsumptionService {
             long daysCount = ChronoUnit.DAYS.between(start, end) + 1; // Number of days inclusive
             double dailyAmount = consumption.getAmount() / daysCount;
 
-            // Update consumption with calculated daily amount if needed
-            consumption.setAmount(dailyAmount);
 
             // Set start and end dates for the consumption
             consumption.setStartDate(start);

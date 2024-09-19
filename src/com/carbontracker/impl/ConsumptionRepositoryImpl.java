@@ -1,5 +1,6 @@
 package com.carbontracker.impl;
 
+import com.carbontracker.mapper.ConsumptionMapper;
 import com.carbontracker.models.Consumption;
 import com.carbontracker.models.Food;
 import com.carbontracker.models.Housing;
@@ -29,7 +30,7 @@ public class ConsumptionRepositoryImpl implements ConsumptionRepository {
             stmt.setObject(1, id); // Use setObject for UUID
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(mapRowToConsumption(rs));
+                    return Optional.of(ConsumptionMapper.mapRowToConsumption(rs));
                 }
             }
         } catch (SQLException e) {
@@ -45,7 +46,7 @@ public class ConsumptionRepositoryImpl implements ConsumptionRepository {
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(query)) {
             while (rs.next()) {
-                consumptions.add(mapRowToConsumption(rs));
+                consumptions.add(ConsumptionMapper.mapRowToConsumption(rs));
             }
         } catch (SQLException e) {
             e.printStackTrace(); // Consider proper logging
@@ -194,45 +195,5 @@ public class ConsumptionRepositoryImpl implements ConsumptionRepository {
         return false;
     }
 
-    private Consumption mapRowToConsumption(ResultSet rs) throws SQLException {
-        UUID id = (UUID) rs.getObject("id"); // Retrieve UUID
-        double amount = rs.getDouble("amount");
-        double impact = rs.getDouble("impact"); // Read impact from result set
-        LocalDate startDate = rs.getDate("start_date").toLocalDate();
-        LocalDate endDate = rs.getDate("end_date").toLocalDate();
-        UUID userId = (UUID) rs.getObject("user_id"); // Retrieve UUID
-        String type = rs.getString("type");
 
-        switch (type) {
-            case "FOOD":
-                return mapRowToFood(rs, id, amount, impact, startDate, endDate, userId);
-            case "HOUSING":
-                return mapRowToHousing(rs, id, amount, impact, startDate, endDate, userId);
-            case "TRANSPORT":
-                return mapRowToTransport(rs, id, amount, impact, startDate, endDate, userId);
-            default:
-                throw new SQLException("Unknown consumption type: " + type);
-        }
-    }
-
-    private Food mapRowToFood(ResultSet rs, UUID id, double amount, double impact, LocalDate startDate, LocalDate endDate, UUID userId) throws SQLException {
-        String typeFood = rs.getString("food_type");
-        double weight = rs.getDouble("weight");
-
-        return new Food(id, typeFood, weight, amount, startDate, endDate, userId);
-    }
-
-    private Housing mapRowToHousing(ResultSet rs, UUID id, double amount, double impact, LocalDate startDate, LocalDate endDate, UUID userId) throws SQLException {
-        String typeEnergy = rs.getString("energy_type");
-        double energyConsumption = rs.getDouble("energy_consumption");
-
-        return new Housing(id, typeEnergy, energyConsumption, amount, startDate, endDate, userId);
-    }
-
-    private Transport mapRowToTransport(ResultSet rs, UUID id, double amount, double impact, LocalDate startDate, LocalDate endDate, UUID userId) throws SQLException {
-        String typeVehicle = rs.getString("vehicle_type");
-        double distanceTravelled = rs.getDouble("distance_travelled");
-
-        return new Transport(id, typeVehicle, distanceTravelled, amount, startDate, endDate, userId);
-    }
 }

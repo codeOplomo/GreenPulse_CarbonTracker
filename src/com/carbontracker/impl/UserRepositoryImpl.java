@@ -1,5 +1,7 @@
 package com.carbontracker.impl;
 
+import com.carbontracker.mapper.ConsumptionMapper;
+import com.carbontracker.models.Consumption;
 import com.carbontracker.models.User;
 import com.carbontracker.config.DbConnection;
 import com.carbontracker.repository.UserRepository;
@@ -26,17 +28,52 @@ public class UserRepositoryImpl implements UserRepository {
     public Optional<User> findById(UUID userId) {
         String query = "SELECT * FROM users WHERE id = ?";
         try (PreparedStatement stmt = connection.prepareStatement(query)) {
-            stmt.setObject(1, userId); // Use setObject for UUID
+            stmt.setObject(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return Optional.of(mapRowToUser(rs));
+                    User user = mapRowToUser(rs);
+                    System.out.println("User found: " + user.getName());
+                    // Fetch consumptions here
+                    List<Consumption> consumptions = fetchConsumptionsForUser(userId);
+                    user.setConsumptions(consumptions); // Ensure your User model can store consumptions
+                    return Optional.of(user);
+                } else {
+                    System.out.println("No user found with ID: " + userId);
                 }
             }
         } catch (SQLException e) {
-            e.printStackTrace(); // Consider proper logging
+            e.printStackTrace();
         }
         return Optional.empty();
     }
+
+    public List<Consumption> fetchConsumptionsForUser(UUID userId) {
+        List<Consumption> consumptions = new ArrayList<>();
+        String query = "SELECT c.id, c.amount, c.impact, c.start_date, c.end_date, c.type, c.user_id, " +
+                "f.food_type, f.weight, " +
+                "h.energy_type, h.energy_consumption, " +
+                "t.vehicle_type, t.distance_travelled " +
+                "FROM consumptions c " +
+                "LEFT JOIN food f ON c.id = f.id " +
+                "LEFT JOIN housing h ON c.id = h.id " +
+                "LEFT JOIN transport t ON c.id = t.id " +
+                "WHERE c.user_id = ?";
+
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setObject(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Consumption consumption = ConsumptionMapper.mapRowToConsumption(rs);
+                    consumptions.add(consumption);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return consumptions;
+    }
+
 
     @Override
     public Collection<User> findAll() {
